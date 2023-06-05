@@ -1,97 +1,31 @@
-import psycopg2
-from flask import Flask, request
-from config import CREDENTIALS
+from flask import Flask, json, make_response, request
+
+from lib.author import Author
+from lib.book import Book
+from lib.employee import Employee
 
 app = Flask(__name__)
 
 @app.route('/books', methods=['GET'])
-def get_books():
+def books():
     if request.method == 'GET':
-        try:
-            db = psycopg2.connect(host=CREDENTIALS['HOSTNAME'],
-                                port=CREDENTIALS['PORT'],
-                                database=CREDENTIALS['DATABASE'],
-                                user=CREDENTIALS['USER'],
-                                password=CREDENTIALS['PASSWORD']
-                                )
-            c = db.cursor()
-            c.execute('SELECT * FROM book')
-            
-            res = c.fetchall()
-            
-            c.close()
-            db.close()
-            return str(res)
-        
-        except (psycopg2.Error, psycopg2.DatabaseError) as err:
-            return f'Error while connecting to PostgreSQL Database: {err}'
+        return Book.get_books()
 
 @app.route('/books/<int:id>', methods=['GET'])
 # request API curl -X GET http://localhost:5000/books/7 -i
-def get_book(id):
+def book(id):
     if request.method == 'GET':
-        try:
-            db = psycopg2.connect(host=CREDENTIALS['HOSTNAME'],
-                                port=CREDENTIALS['PORT'],
-                                database=CREDENTIALS['DATABASE'],
-                                user=CREDENTIALS['USER'],
-                                password=CREDENTIALS['PASSWORD']
-                                )
-            c = db.cursor()
-            c.execute(f'SELECT * FROM book WHERE book_number={id}')
-            
-            res = c.fetchone()
-            
-            c.close()
-            db.close()
-            return str(res)
-        
-        except (psycopg2.Error, psycopg2.DatabaseError) as err:
-            return f'Error while connecting to PostgreSQL Database: {err}'
+        return Book.get_book(id)
 
 @app.route('/authors', methods=['GET'])
-def get_authors():
+def authors():
     if request.method == 'GET':
-        try:
-            db = psycopg2.connect(host=CREDENTIALS['HOSTNAME'],
-                                port=CREDENTIALS['PORT'],
-                                database=CREDENTIALS['DATABASE'],
-                                user=CREDENTIALS['USER'],
-                                password=CREDENTIALS['PASSWORD']
-                                )
-            c = db.cursor()
-            c.execute('SELECT * FROM author')
-            
-            res = c.fetchall()
-            
-            c.close()
-            db.close()
-            return str(res)
-        
-        except (psycopg2.Error, psycopg2.DatabaseError) as err:
-            return f'Error while connecting to PostgreSQL Database: {err}'
+        return Author.get_authors()
 
 @app.route('/employees', methods=['GET'])
-def get_employees():
+def employees():
     if request.method == 'GET':
-        try:
-            db = psycopg2.connect(host=CREDENTIALS['HOSTNAME'],
-                                port=CREDENTIALS['PORT'],
-                                database=CREDENTIALS['DATABASE'],
-                                user=CREDENTIALS['USER'],
-                                password=CREDENTIALS['PASSWORD']
-                                )
-            c = db.cursor()
-            c.execute('SELECT * FROM staff')
-            
-            res = c.fetchall()
-            
-            c.close()
-            db.close()
-            return str(res)
-        
-        except (psycopg2.Error, psycopg2.DatabaseError) as err:
-            return f'Error while connecting to PostgreSQL Database: {err}'
+        return Employee.get_employees()
 
 if __name__ == '__main__':
     app.run()
