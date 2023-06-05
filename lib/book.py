@@ -18,10 +18,24 @@ class Book:
             c.execute('SELECT * FROM book')
             data = c.fetchall()
             
+            res = []
+            for index in data:
+                book = {
+                    "store": index[0],
+                    "book_number": index[1],
+                    "book_name": index[2],
+                    "publication_year": index[3],
+                    "pages": index[4],
+                    "pname": index[5],
+                    "quantity": index[6],
+                    "price": index[7],
+                }
+                res.append(book)
+            
             c.close()
             db.close()
             
-            return str(data)
+            return res
         
         except (psycopg2.Error, psycopg2.DatabaseError) as err:
             c.close()
@@ -74,12 +88,12 @@ class Book:
             c = db.cursor()
             c.execute(f"""INSERT INTO book (store, book_number, book_name, publication_year, pages, pname, quantity, price)
                       VALUES({store}, {book_number}, {book_name}, {publication_year}, {pages}, {pname}, {quantity}, {price})""")
-            data = c.fetchone()
             
             c.close()
+            db.commit()
             db.close()
             
-            return str(data)
+            return 'success'
         
         except (psycopg2.Error, psycopg2.DatabaseError) as err:
             c.close()
