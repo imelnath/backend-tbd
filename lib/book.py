@@ -4,39 +4,6 @@ from config import CREDENTIALS
 
 
 class Book:
-    
-    def getall_books():
-        try:
-            db = psycopg2.connect(host=CREDENTIALS['HOSTNAME'],
-                                port=CREDENTIALS['PORT'],
-                                database=CREDENTIALS['DATABASE'],
-                                user=CREDENTIALS['USER'],
-                                password=CREDENTIALS['PASSWORD']
-                                )
-            c = db.cursor()
-            c.execute('SELECT * FROM book')
-            data = c.fetchall()
-            
-            res = []
-            for col in data:
-                book = {
-                    "book_number": col[0],
-                    "book_name": col[1],
-                    "publication_year": col[2],
-                    "pages": col[3],
-                    "publisher_name": col[4],
-                }
-                res.append(book)
-            
-            c.close()
-            db.close()
-            
-            return res
-        
-        except (psycopg2.Error, psycopg2.DatabaseError) as err:
-            c.close()
-            db.close()
-            return f'Error while connecting to PostgreSQL Database: {err}'
         
     def get_books(store_number):
         try:
@@ -80,48 +47,6 @@ class Book:
             db.close()
             return [], f'Error while connecting to PostgitemsQL Database: {err}'
         
-        
-    def get_book(store_number, book_number):
-        try:
-            db = psycopg2.connect(host=CREDENTIALS['HOSTNAME'],
-                                    port=CREDENTIALS['PORT'],
-                                    database=CREDENTIALS['DATABASE'],
-                                    user=CREDENTIALS['USER'],
-                                    password=CREDENTIALS['PASSWORD']
-                                    )
-            c = db.cursor()
-            c.execute(f"""
-                        SELECT b.book_number, b.book_name, b.publication_year, b.pages, b.publisher_name
-                        FROM book b
-	                        JOIN stock st ON b.book_number=st.book_number
-	                        JOIN store s ON st.store_number=s.store_number
-                        WHERE st.store_number={store_number} AND b.book_number={book_number}
-                    """)
-            data = c.fetchone()
-            msg = "success"
-            
-            item = []
-            if data != None:
-                book = {
-                        "book_number": data[0],
-                        "book_name": data[1],
-                        "publication_year": data[2],
-                        "pages": data[3],
-                        "publisher_name": data[4],
-                    }
-                item.append(book)
-            else:
-                msg = "Not Found"
-            
-            c.close()
-            db.close()
-            return item, msg
-        
-        except (psycopg2.Error, psycopg2.DatabaseError) as err:
-            c.close()
-            db.close()
-            return [], f'Error while connecting to PostgitemsQL Database: {err}'
-    
     
     def add_book(req):
         
@@ -152,10 +77,15 @@ class Book:
             
             if not (book_name in _book_names):
                 book_number = max(_book_numbers)+1
-                c.execute(f"""INSERT INTO book (book_number, book_name, publication_year, pages, publisher_name)
-                      VALUES({book_number}, '{book_name}', {publication_year}, {pages}, '{publisher_name}')""")
-                c.execute(f"""INSERT INTO stock (store_number, book_number, quantity)
-                          VALUES({store_number}, {book_number}, {quantity})""")
+                c.execute(f"""
+                      BEGIN;
+                      INSERT INTO book (book_number, book_name, publication_year, pages, publisher_name)
+                      VALUES({book_number}, '{book_name}', {publication_year}, {pages}, '{publisher_name}');
+                      INSERT INTO stock (store_number, book_number, quantity)
+                          VALUES({store_number}, {book_number}, {quantity});
+                      COMMIT;
+                      ROLLBACK;
+                      """)
             else:
                 msg = "Book already exists"
             
@@ -180,10 +110,11 @@ class Book:
                                     )
             c = db.cursor()
             c.execute(f"""
-                      DELETE FROM stock WHERE book_number={book_number}
-                      """)
-            c.execute(f"""
-                      DELETE FROM book WHERE book_number={book_number}
+                      BEGIN;
+                      DELETE FROM stock WHERE book_number={book_number};
+                      DELETE FROM book WHERE book_number={book_number};
+                      COMMIT;
+                      ROLLBACK;
                       """)
             msg = "success"
             
